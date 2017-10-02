@@ -34,7 +34,7 @@ L_vs_Z--Swift_short--with_names.txt                         : Output of above co
 sensitivity_plots.py          : Plotting the above data along with the computed instrumental thresholds.
 thresholds.txt                : One-time output of above code, used for all consecutive runs of the code.
 
-fitting_the_phi--ECPL--.py          : Exploring the parameter space of the ECPL model.
+fitting_the_phi--ECPL.py          : Exploring the parameter space of the ECPL model.
 fitting_the_phi--ECPL--plots.py     : Plotting the fits for the solutions of the ECPL model.
 fitting_the_phi--BPL.py             : Exploring the parameter space of the BPL model.
 fitting_the_phi--BPL--plots.py      : Plotting the fits for the solutions of the BPL model.
