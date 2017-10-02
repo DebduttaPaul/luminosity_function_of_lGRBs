@@ -267,13 +267,13 @@ def model_evolvingECPL( L_cut, coeff, delta, nu, chi, z1, z2 ):
 	
 	lower_limit_array	=	L_lo/L_b
 	upper_limit_array	=	L_hi/L_b
-	denominator_array	=	np.zeros(z_sim.size)
+	denominator			=	np.zeros(z_sim.size)
 	for k, z in enumerate(z_sim):
-		lower_limit				=	lower_limit_array[k]
-		upper_limit				=	upper_limit_array[k]
+		lower_limit		=	lower_limit_array[k]
+		upper_limit		=	upper_limit_array[k]
 		
-		denominator_array[k]	=	quad( f, lower_limit, upper_limit, args=(nu) )[0]
-	denominator_array	=	L_b * denominator_array 
+		denominator[k]	=	quad( f, lower_limit, upper_limit, args=(nu) )[0]
+	denominator			=	L_b * denominator 
 	
 	
 	N_vs_L__model	=	np.zeros(Luminosity_mids.size)
@@ -292,16 +292,14 @@ def model_evolvingECPL( L_cut, coeff, delta, nu, chi, z1, z2 ):
 			L					=	np.linspace( Lmin[k], Lmax[k], 1e3 )
 			integrand			=	(  (L/L_b[k])**(-nu)  )  *  np.exp( - L/L_b[k] )
 			integral_over_L[k]	=	simps( integrand, L )
-		integral_over_L	=	integral_over_L / denominator_array
-		
-		
-		ind	=	np.where( integral_over_L <= 0  )[0]
+		integral_over_L			=	integral_over_L / denominator
+		ind						=	np.where( integral_over_L <= 0  )[0]
 		integral_over_L[ind]	=	0
 		
-		integrand	=	CSFR  *  integral_over_L		
-		integral	=	simps( integrand, z_sim )
+		integrand				=	CSFR  *  integral_over_L		
+		integral				=	simps( integrand, z_sim )
 		
-		N_vs_L__model[j]	=	integral
+		N_vs_L__model[j]		=	integral
 	
 	
 	return N_vs_L__model
