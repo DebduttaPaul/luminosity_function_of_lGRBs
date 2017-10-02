@@ -41,3 +41,4 @@ fitting_the_phi--BPL--plots.py      : Plotting the fits for the solutions of the
 ratio_of_models.py                  : Explaining discrepancy of data and model at high redshfts from a simple hypothesis.
 parameter_error_estimation--BPL.py  : Estimating the errors in the final solutions of the BPL model.
 parameter_error_estimation--ECPL.py : Estimating the errors in the final solutions of the ECPL model.
+
