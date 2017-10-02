@@ -34,7 +34,7 @@ logL_max	=	+5
 
 padding		= 	8	# The padding of the axes labels.
 size_font	= 	16	# The fontsize in the images.
-marker_size	=	07	# The size of markers in scatter plots.
+marker_size	=	7	# The size of markers in scatter plots.
 al			=	0.8	# The brightness of plots.
 
 
