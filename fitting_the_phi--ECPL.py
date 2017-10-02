@@ -497,4 +497,3 @@ ind_rdcdchisqrd_min__Swift	=	np.unravel_index( grid_of_rdcdchisqrd__Swift.argmin
 nu_Swift	=	nu_array[ind_rdcdchisqrd_min__Swift[0]]
 Lb_Swift	=	Lb_array[ind_rdcdchisqrd_min__Swift[1]]
 print 'Minimum reduced-chisquared of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu_Swift, Lb_Swift ), '\n\n\n\n\n\n\n\n'
-
