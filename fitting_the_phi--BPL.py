@@ -34,7 +34,7 @@ logL_max	=	+5
 
 padding		= 	8	# The padding of the axes labels.
 size_font	= 	16	# The fontsize in the images.
-marker_size	=	07	# The size of markers in scatter plots.
+marker_size	=   7	# The size of markers in scatter plots.
 al			=	0.8	# The brightness of plots.
 
 
@@ -112,11 +112,11 @@ Swift_long_Luminosity_error	=	np.delete( Swift_long_Luminosity_error, inds_to_de
 #	print np.where(  other_long_redshift > 10 )[0].size
 
 
-sorted_Fermi_redshifts	=	np.sort( Fermi_long_redshift )
-equal_bin	=	sorted_Fermi_redshifts.size / 3
-sorted_Swift_redshifts	=	np.sort( Swift_long_redshift )
-equal_bin	=	sorted_Swift_redshifts.size / 3
+#~ sorted_Fermi_redshifts	=	np.sort( Fermi_long_redshift )
+#~ equal_bin	=	sorted_Fermi_redshifts.size / 3
 #~ print 'Fermi equal bins at', sorted_Fermi_redshifts[int(1*equal_bin)], sorted_Fermi_redshifts[int(2*equal_bin)], sorted_Fermi_redshifts[int(3*equal_bin-1)]
+#~ sorted_Swift_redshifts	=	np.sort( Swift_long_redshift )
+#~ equal_bin	=	sorted_Swift_redshifts.size / 3
 #~ print 'Swift equal bins at', sorted_Swift_redshifts[int(1*equal_bin)], sorted_Swift_redshifts[int(2*equal_bin)], sorted_Swift_redshifts[int(3*equal_bin-1)]
 #~ print '\n\n'
 
@@ -154,12 +154,21 @@ L_hi	=	Luminosity_maxs.max()
 ####################################################################################################################################################
 
 
-def model_evolvingpowerlaw( L_cut, coeff, delta, chi, nu1, nu2, z1, z2 ):
+def model_evolvingBPL( L_cut, coeff, delta, chi, nu1, nu2, z1, z2 ):
 	
 	
-	L_b	=	( L_norm * coeff ) * ( (1+z_sim)**delta )
+	CSFR				=	rho_star_dot.copy()
+	inds_to_zero		=	np.where( (z_sim<z1) | (z2<z_sim) )[0]
+	CSFR[inds_to_zero]	=	0
+	CSFR				=	CSFR  *  (  (1+z_sim)**chi  )
+	CSFR				=	CSFR  *  volume_term
+	
+	
+	L_b					=	( L_norm * coeff ) * ( (1+z_sim)**delta )
+	denominator			=	(  ( 1 - (L_lo/L_b)**(-nu1+1) ) / (-nu1+1)  )  +  (  ( (L_hi/L_b)**(-nu2+1) - 1 ) / (-nu2+1)  )
+	
+	
 	N_vs_L__model	=	np.zeros(Luminosity_mids.size)
-	
 	for j, L1 in enumerate( Luminosity_mins ):
 		
 		inds		=	np.where( L_cut <= L1 )[0]
@@ -174,23 +183,16 @@ def model_evolvingpowerlaw( L_cut, coeff, delta, chi, nu1, nu2, z1, z2 ):
 		ind_mid			=	np.where( (L1 < L_b) & (L_b < L2) )[0]
 		ind_high		=	np.where( L2 <= L_b )[0]
 		
-		integral_over_L[ind_low]	=	(  (Lmax/L_b)**(-nu2+1) - (Lmin/L_b)**(-nu2+1)  ) / (-nu2+1)
-		integral_over_L[ind_mid]	=	(  ( 1 - (Lmin/L_b)**(-nu1+1) ) / (-nu1+1)  )  +  (  ( (Lmax/L_b)**(-nu2+1) - 1 ) / (-nu2+1)  )
-		integral_over_L[ind_high]	=	(  (Lmax/L_b)**(-nu1+1) - (Lmin/L_b)**(-nu1+1)  ) / (-nu1+1)
-		
-		denominator					=	(  ( 1 - (L_lo/L_b)**(-nu1+1) ) / (-nu1+1)  )  +  (  ( (L_hi/L_b)**(-nu2+1) - 1 ) / (-nu2+1)  )
+		integral_over_L[ind_low]	=	(  ((Lmax/L_b)[ind_low])**(-nu2+1) - ((Lmin/L_b)[ind_low])**(-nu2+1)  ) / (-nu2+1)
+		integral_over_L[ind_mid]	=	(  ( 1 - ((Lmin/L_b)[ind_mid])**(-nu1+1) ) / (-nu1+1)  )  +  (  ( ((Lmax/L_b)[ind_mid])**(-nu2+1) - 1 ) / (-nu2+1)  )
+		integral_over_L[ind_high]	=	(  ((Lmax/L_b)[ind_high])**(-nu1+1) - ((Lmin/L_b)[ind_high])**(-nu1+1)  ) / (-nu1+1)
 		integral_overL				=	integral_over_L / denominator
 		
 		ind	=	np.where( integral_over_L <= 0  )[0]
 		integral_over_L[ind]	=	0
 		
-		CSFR				=	rho_star_dot.copy()
-		inds_to_take		=	np.where( (z1<z_sim) & (z_sim<z2) )[0]
-		inds_to_zero		=	np.delete( np.arange(z_sim.size), inds_to_take )
-		CSFR[inds_to_zero]	=	0
-		CSFR				=	CSFR  *  (  (1+z_sim)**chi  )
 		
-		integrand	=	CSFR  *  volume_term  *  integral_over_L		
+		integrand	=	CSFR  *  integral_over_L		
 		integral	=	simps( integrand, z_sim )
 		
 		N_vs_L__model[j]	=	integral
@@ -354,10 +356,10 @@ for c1, nu1 in enumerate(nu1_array):
 					for j, z in enumerate( z_binned__Fermi[:-1] ):
 						
 						if j == 0:
-							model_bin__Fermi	=	model_evolvingpowerlaw( L_cut__Fermi, coeff, delta, chi, nu1, nu2, z, z_binned__Fermi[j+1] )
+							model_bin__Fermi	=	model_evolvingBPL( L_cut__Fermi, coeff, delta, chi, nu1, nu2, z, z_binned__Fermi[j+1] )
 							Fermi_norm			=	obsFermi_long[j].sum() / model_bin__Fermi.sum()
 						
-						model_bin__Fermi	=	model_evolvingpowerlaw( L_cut__Fermi, coeff, delta, chi, nu1, nu2, z, z_binned__Fermi[j+1] )
+						model_bin__Fermi	=	model_evolvingBPL( L_cut__Fermi, coeff, delta, chi, nu1, nu2, z, z_binned__Fermi[j+1] )
 						model_bin__Fermi	=	model_bin__Fermi * Fermi_norm
 						
 						#	ax[j] = fig.add_subplot(z_binned__Fermi.size-1,1,j+1)
@@ -434,155 +436,156 @@ print 'Minimum reduced-chisquared of {0:.3f} at nu1 = {1:.2f}, nu2 = {2:.2f}, Lb
 
 
 
-#	nu1_min	=	0.60	;	nu1_max	=	1.09	;	nu1_bin	=	0.10	#3
-#	nu2_min	=	2.00	;	nu2_max	=	2.50	;	nu2_bin	=	0.10	#3
-#	Lb__min	=	0.01	;	Lb__max	=	0.30	;	Lb__bin	=	0.05	#3
-#	del_min	=	3.05	;	del_max	=	4.80	;	del_bin	=	0.25	#3
-#	chi_min	=	-1.80	;	chi_max	=	-0.60	;	chi_bin	=	0.25	#3
-#	nu1_min	=	0.60	;	nu1_max	=	1.09	;	nu1_bin	=	0.10	#4
-#	nu2_min	=	2.00	;	nu2_max	=	2.50	;	nu2_bin	=	0.10	#4
-#	Lb__min	=	0.01	;	Lb__max	=	0.45	;	Lb__bin	=	0.05	#4
-#	del_min	=	2.55	;	del_max	=	5.05	;	del_bin	=	0.25	#4
-#	chi_min	=	-1.80	;	chi_max	=	-0.60	;	chi_bin	=	0.25	#4
+#~ #	nu1_min	=	0.60	;	nu1_max	=	1.09	;	nu1_bin	=	0.10	#3
+#~ #	nu2_min	=	2.00	;	nu2_max	=	2.50	;	nu2_bin	=	0.10	#3
+#~ #	Lb__min	=	0.01	;	Lb__max	=	0.30	;	Lb__bin	=	0.05	#3
+#~ #	del_min	=	3.05	;	del_max	=	4.80	;	del_bin	=	0.25	#3
+#~ #	chi_min	=	-1.80	;	chi_max	=	-0.60	;	chi_bin	=	0.25	#3
+#~ #	nu1_min	=	0.60	;	nu1_max	=	1.09	;	nu1_bin	=	0.10	#4
+#~ #	nu2_min	=	2.00	;	nu2_max	=	2.50	;	nu2_bin	=	0.10	#4
+#~ #	Lb__min	=	0.01	;	Lb__max	=	0.45	;	Lb__bin	=	0.05	#4
+#~ #	del_min	=	2.55	;	del_max	=	5.05	;	del_bin	=	0.25	#4
+#~ #	chi_min	=	-1.80	;	chi_max	=	-0.60	;	chi_bin	=	0.25	#4
+#~ 
+print '...Swift...', '\n\n'
+nu1_min	=	0.10	;	nu1_max	=	1.60	;	nu1_bin	=	0.25	#1
+nu2_min	=	1.50	;	nu2_max	=	2.60	;	nu2_bin	=	0.25	#1
+Lb__min	=	0.05	;	Lb__max	=	1.50	;	Lb__bin	=	0.25	#1
+del_min	=	1.10	;	del_max	=	4.50	;	del_bin	=	0.25	#1
+chi_min	=	-2.00	;	chi_max	=	-0.05	;	chi_bin	=	0.25	#1
+nu1_min	=	0.40	;	nu1_max	=	0.90	;	nu1_bin	=	0.10	#2
+nu2_min	=	1.50	;	nu2_max	=	2.01	;	nu2_bin	=	0.10	#2
+Lb__min	=	0.01	;	Lb__max	=	0.26	;	Lb__bin	=	0.05	#2
+del_min	=	3.90	;	del_max	=	4.39	;	del_bin	=	0.10	#2
+chi_min	=	-1.20	;	chi_max	=	-0.70	;	chi_bin	=	0.10	#2
+nu1_min	=	0.50	;	nu1_max	=	1.00	;	nu1_bin	=	0.10	#3
+nu2_min	=	1.80	;	nu2_max	=	2.30	;	nu2_bin	=	0.10	#3
+Lb__min	=	0.03	;	Lb__max	=	0.10	;	Lb__bin	=	0.01	#3
+del_min	=	3.90	;	del_max	=	4.20	;	del_bin	=	0.10	#3
+chi_min	=	-1.00	;	chi_max	=	-0.50	;	chi_bin	=	0.10	#3
+nu1_min	=	0.50	;	nu1_max	=	1.00	;	nu1_bin	=	0.10	#4
+nu2_min	=	1.80	;	nu2_max	=	2.50	;	nu2_bin	=	0.10	#4
+Lb__min	=	0.05	;	Lb__max	=	0.10	;	Lb__bin	=	0.01	#4
+del_min	=	3.90	;	del_max	=	4.20	;	del_bin	=	0.05	#4
+chi_min	=	-0.90	;	chi_max	=	-0.50	;	chi_bin	=	0.10	#4
+nu1_min	=	0.60	;	nu1_max	=	0.801	;	nu1_bin	=	0.10	#5
+nu2_min	=	1.90	;	nu2_max	=	2.40	;	nu2_bin	=	0.10	#5
+Lb__min	=	0.06	;	Lb__max	=	0.09	;	Lb__bin	=	0.01	#5
+del_min	=	3.90	;	del_max	=	4.05	;	del_bin	=	0.05	#5
+chi_min	=	-0.80	;	chi_max	=	-0.30	;	chi_bin	=	0.10	#5
+nu1_min	=	0.60	;	nu1_max	=	0.801	;	nu1_bin	=	0.05	#6
+nu2_min	=	2.00	;	nu2_max	=	2.25	;	nu2_bin	=	0.05	#6
+Lb__min	=	0.06	;	Lb__max	=	0.09	;	Lb__bin	=	0.01	#6
+del_min	=	3.90	;	del_max	=	4.05	;	del_bin	=	0.05	#6
+chi_min	=	-0.70	;	chi_max	=	-0.45	;	chi_bin	=	0.05	#6
+nu1_min	=	0.40	;	nu1_max	=	0.90	;	nu1_bin	=	0.10	#7
+nu2_min	=	1.50	;	nu2_max	=	3.80	;	nu2_bin	=	0.25	#7
+Lb__min	=	0.10	;	Lb__max	=	0.60	;	Lb__bin	=	0.10	#7
+del_min	=	2.70	;	del_max	=	3.30	;	del_bin	=	0.10	#7
+chi_min	=	-1.00	;	chi_max	=	-0.40	;	chi_bin	=	0.10	#7
+nu1_min	=	0.60	;	nu1_max	=	0.81	;	nu1_bin	=	0.05	#8
+nu2_min	=	2.50	;	nu2_max	=	3.01	;	nu2_bin	=	0.10	#8
+Lb__min	=	0.10	;	Lb__max	=	0.35	;	Lb__bin	=	0.05	#8
+del_min	=	3.00	;	del_max	=	3.25	;	del_bin	=	0.05	#8
+chi_min	=	-0.60	;	chi_max	=	-0.10	;	chi_bin	=	0.10	#8
+nu1_array	=	np.arange( nu1_min, nu1_max, nu1_bin )	;	nu1_size	=	nu1_array.size
+nu2_array	=	np.arange( nu2_min, nu2_max, nu2_bin )	;	nu2_size	=	nu2_array.size
+Lb__array	=	np.arange( Lb__min, Lb__max, Lb__bin )	;	Lb__size	=	Lb__array.size
+del_array	=	np.arange( del_min, del_max, del_bin )	;	del_size	=	del_array.size
+chi_array	=	np.arange( chi_min, chi_max, chi_bin )	;	chi_size	=	chi_array.size
+print 'nu1_array:	', nu1_array
+print 'nu2_array:	', nu2_array
+print 'Lb__array:	', Lb__array
+print 'del_array:	', del_array
+print 'chi_array:	', chi_array, '\n'
+grid_of_discrepancy__Swift	=	np.zeros( (nu1_size, nu2_size, Lb__size, del_size, chi_size) )
+grid_of_rdcdchisqrd__Swift	=	grid_of_discrepancy__Swift.copy()
+print 'Grid of {0:d} (nu1) X {1:d} (nu2) X {2:d} (Lb) X {3:d} (del) X {4:d} (chi) = {5:d}.'.format(nu1_size, nu2_size, Lb__size, del_size, chi_size, grid_of_rdcdchisqrd__Swift.size)
 
-#~ print '...Swift...', '\n\n'
-#~ nu1_min	=	0.10	;	nu1_max	=	1.60	;	nu1_bin	=	0.25	#1
-#~ nu2_min	=	1.50	;	nu2_max	=	2.60	;	nu2_bin	=	0.25	#1
-#~ Lb__min	=	0.05	;	Lb__max	=	1.50	;	Lb__bin	=	0.25	#1
-#~ del_min	=	1.10	;	del_max	=	4.50	;	del_bin	=	0.25	#1
-#~ chi_min	=	-2.00	;	chi_max	=	-0.05	;	chi_bin	=	0.25	#1
-#~ nu1_min	=	0.40	;	nu1_max	=	0.90	;	nu1_bin	=	0.10	#2
-#~ nu2_min	=	1.50	;	nu2_max	=	2.01	;	nu2_bin	=	0.10	#2
-#~ Lb__min	=	0.01	;	Lb__max	=	0.26	;	Lb__bin	=	0.05	#2
-#~ del_min	=	3.90	;	del_max	=	4.39	;	del_bin	=	0.10	#2
-#~ chi_min	=	-1.20	;	chi_max	=	-0.70	;	chi_bin	=	0.10	#2
-#~ nu1_min	=	0.50	;	nu1_max	=	1.00	;	nu1_bin	=	0.10	#3
-#~ nu2_min	=	1.80	;	nu2_max	=	2.30	;	nu2_bin	=	0.10	#3
-#~ Lb__min	=	0.03	;	Lb__max	=	0.10	;	Lb__bin	=	0.01	#3
-#~ del_min	=	3.90	;	del_max	=	4.20	;	del_bin	=	0.10	#3
-#~ chi_min	=	-1.00	;	chi_max	=	-0.50	;	chi_bin	=	0.10	#3
-#~ nu1_min	=	0.50	;	nu1_max	=	1.00	;	nu1_bin	=	0.10	#4
-#~ nu2_min	=	1.80	;	nu2_max	=	2.50	;	nu2_bin	=	0.10	#4
-#~ Lb__min	=	0.05	;	Lb__max	=	0.10	;	Lb__bin	=	0.01	#4
-#~ del_min	=	3.90	;	del_max	=	4.20	;	del_bin	=	0.05	#4
-#~ chi_min	=	-0.90	;	chi_max	=	-0.50	;	chi_bin	=	0.10	#4
-#~ nu1_min	=	0.60	;	nu1_max	=	0.801	;	nu1_bin	=	0.10	#5
-#~ nu2_min	=	1.90	;	nu2_max	=	2.40	;	nu2_bin	=	0.10	#5
-#~ Lb__min	=	0.06	;	Lb__max	=	0.09	;	Lb__bin	=	0.01	#5
-#~ del_min	=	3.90	;	del_max	=	4.05	;	del_bin	=	0.05	#5
-#~ chi_min	=	-0.80	;	chi_max	=	-0.30	;	chi_bin	=	0.10	#5
-#~ nu1_min	=	0.60	;	nu1_max	=	0.801	;	nu1_bin	=	0.05	#6
-#~ nu2_min	=	2.00	;	nu2_max	=	2.25	;	nu2_bin	=	0.05	#6
-#~ Lb__min	=	0.06	;	Lb__max	=	0.09	;	Lb__bin	=	0.01	#6
-#~ del_min	=	3.90	;	del_max	=	4.05	;	del_bin	=	0.05	#6
-#~ chi_min	=	-0.70	;	chi_max	=	-0.45	;	chi_bin	=	0.05	#6
-#~ nu1_min	=	0.40	;	nu1_max	=	0.90	;	nu1_bin	=	0.10	#7
-#~ nu2_min	=	1.50	;	nu2_max	=	3.80	;	nu2_bin	=	0.25	#7
-#~ Lb__min	=	0.10	;	Lb__max	=	0.60	;	Lb__bin	=	0.10	#7
-#~ del_min	=	2.70	;	del_max	=	3.30	;	del_bin	=	0.10	#7
-#~ chi_min	=	-1.00	;	chi_max	=	-0.40	;	chi_bin	=	0.10	#7
-#~ nu1_min	=	0.60	;	nu1_max	=	0.81	;	nu1_bin	=	0.05	#8
-#~ nu2_min	=	2.50	;	nu2_max	=	3.01	;	nu2_bin	=	0.10	#8
-#~ Lb__min	=	0.10	;	Lb__max	=	0.35	;	Lb__bin	=	0.05	#8
-#~ del_min	=	3.00	;	del_max	=	3.25	;	del_bin	=	0.05	#8
-#~ chi_min	=	-0.60	;	chi_max	=	-0.10	;	chi_bin	=	0.10	#8
-#~ nu1_array	=	np.arange( nu1_min, nu1_max, nu1_bin )	;	nu1_size	=	nu1_array.size
-#~ nu2_array	=	np.arange( nu2_min, nu2_max, nu2_bin )	;	nu2_size	=	nu2_array.size
-#~ Lb__array	=	np.arange( Lb__min, Lb__max, Lb__bin )	;	Lb__size	=	Lb__array.size
-#~ del_array	=	np.arange( del_min, del_max, del_bin )	;	del_size	=	del_array.size
-#~ chi_array	=	np.arange( chi_min, chi_max, chi_bin )	;	chi_size	=	chi_array.size
-#~ print 'nu1_array:	', nu1_array
-#~ print 'nu2_array:	', nu2_array
-#~ print 'Lb__array:	', Lb__array
-#~ print 'del_array:	', del_array
-#~ print 'chi_array:	', chi_array, '\n'
-#~ grid_of_discrepancy__Swift	=	np.zeros( (nu1_size, nu2_size, Lb__size, del_size, chi_size) )
-#~ grid_of_rdcdchisqrd__Swift	=	grid_of_discrepancy__Swift.copy()
-#~ print 'Grid of {0:d} (nu1) X {1:d} (nu2) X {2:d} (Lb) X {3:d} (del) X {4:d} (chi) = {5:d}.'.format(nu1_size, nu2_size, Lb__size, del_size, chi_size, grid_of_rdcdchisqrd__Swift.size)
+t0	=	time.time()
+for c1, nu1 in enumerate(nu1_array):
+	for c2, nu2 in enumerate(nu2_array):
+		for cLb, coeff in enumerate(Lb__array):
+			for cdel, delta in enumerate(del_array):
+				for cX, chi in enumerate(chi_array):
+					
+					modeled__Swift_long			=	np.zeros( (z_binned__Swift.size-1 , Luminosity_mids.size) )
+					discrepancy_over_z__Swift	=	np.zeros( z_binned__Swift.size )
+					rdcdchisqrd_over_z__Swift	=	discrepancy_over_z__Swift.copy()
+					
+					#	ax	=	{}
+					#	fig	=	plt.figure( figsize=(6, 6) )
+					
+					for j, z in enumerate( z_binned__Swift[:-1] ):
+						
+						if j == 0:
+							model_bin__Swift	=	model_evolvingBPL( L_cut__Swift, coeff, delta, chi, nu1, nu2, z, z_binned__Swift[j+1] )
+							Swift_norm			=	obsSwift_long[j].sum() / model_bin__Swift.sum()
+						
+						model_bin__Swift	=	model_evolvingBPL( L_cut__Swift, coeff, delta, chi, nu1, nu2, z, z_binned__Swift[j+1] )
+						model_bin__Swift	=	model_bin__Swift * Swift_norm
+						
+						#	ax[j] = fig.add_subplot(z_binned__Swift.size-1,1,j+1)
+						#	ax[j].text( -3.5, 350, r'$ z : $ ' + r'$ {0:.1f} $'.format(z) + r' $ \rm{to} $ ' + r'$ {0:.1f} $'.format(z_binned__Swift[j+1]), fontsize = size_font, ha = 'center', va = 'center' )
+						#	ax[j].set_ylabel( r'$ \rm{ N } $', fontsize = size_font, rotation = 0, labelpad = padding+6 )
+						#	ax[j].set_ylim( 0, 400 )
+						#	ax[j].errorbar( Luminosity_mids, obsSwift_long[j], yerr = [ obsSwift_long_poserr[j], obsSwift_long_negerr[j] ], fmt = '-', color = 'k', label = r' $ \rm{ observed } $' )
+						#	ax[j].plot( Luminosity_mids, model_bin__Swift, linestyle = '--', color = 'k', label = r' $ \rm{ model } $' )
+						#	ax[j].legend()
+						#	ltext = plt.gca().get_legend().get_texts()
+						#	plt.setp( ltext[0], fontsize = 11 )
+						
+						modeled__Swift_long[j]			=	model_bin__Swift
+						discrepancy_over_z__Swift[j]	=	find_discrepancy( model_bin__Swift, obsSwift_long[j] )
+						rdcdchisqrd_over_z__Swift[j]	=	mf.reduced_chisquared( model_bin__Swift, obsSwift_long[j], obsSwift_long_error[j], 5 )[2]
+					
+					#	xticklabels	=	ax[0].get_xticklabels() + ax[1].get_xticklabels()
+					#	plt.setp( xticklabels, visible = False )
+					#	plt.xlabel( r'$ \rm{ log } $' + r'$ ( L_{iso} / L_{0} ) $', fontsize = size_font, labelpad = padding+5 )
+					#	plt.show()
+					
+					grid_of_discrepancy__Swift[c1, c2, cLb, cdel, cX]	=	np.sum(  discrepancy_over_z__Swift )
+					grid_of_rdcdchisqrd__Swift[c1, c2, cLb, cdel, cX]	=	np.mean( rdcdchisqrd_over_z__Swift )
+print 'Swift done in {:.3f} hrs.'.format( ( time.time()-t0 )/3600 ), '\n'
 #~ 
-#~ t0	=	time.time()
-#~ for c1, nu1 in enumerate(nu1_array):
-	#~ for c2, nu2 in enumerate(nu2_array):
-		#~ for cLb, coeff in enumerate(Lb__array):
-			#~ for cdel, delta in enumerate(del_array):
-				#~ for cX, chi in enumerate(chi_array):
-					#~ 
-					#~ modeled__Swift_long			=	np.zeros( (z_binned__Swift.size-1 , Luminosity_mids.size) )
-					#~ discrepancy_over_z__Swift	=	np.zeros( z_binned__Swift.size )
-					#~ rdcdchisqrd_over_z__Swift	=	discrepancy_over_z__Swift.copy()
-					#~ 
-					#~ #	ax	=	{}
-					#~ #	fig	=	plt.figure( figsize=(6, 6) )
-					#~ 
-					#~ for j, z in enumerate( z_binned__Swift[:-1] ):
-						#~ 
-						#~ if j == 0:
-							#~ model_bin__Swift	=	model_evolvingpowerlaw( L_cut__Swift, coeff, delta, chi, nu1, nu2, z, z_binned__Swift[j+1] )
-							#~ Swift_norm			=	obsSwift_long[j].sum() / model_bin__Swift.sum()
-						#~ 
-						#~ model_bin__Swift	=	model_evolvingpowerlaw( L_cut__Swift, coeff, delta, chi, nu1, nu2, z, z_binned__Swift[j+1] )
-						#~ model_bin__Swift	=	model_bin__Swift * Swift_norm
-						#~ 
-						#~ #	ax[j] = fig.add_subplot(z_binned__Swift.size-1,1,j+1)
-						#~ #	ax[j].text( -3.5, 350, r'$ z : $ ' + r'$ {0:.1f} $'.format(z) + r' $ \rm{to} $ ' + r'$ {0:.1f} $'.format(z_binned__Swift[j+1]), fontsize = size_font, ha = 'center', va = 'center' )
-						#~ #	ax[j].set_ylabel( r'$ \rm{ N } $', fontsize = size_font, rotation = 0, labelpad = padding+6 )
-						#~ #	ax[j].set_ylim( 0, 400 )
-						#~ #	ax[j].errorbar( Luminosity_mids, obsSwift_long[j], yerr = [ obsSwift_long_poserr[j], obsSwift_long_negerr[j] ], fmt = '-', color = 'k', label = r' $ \rm{ observed } $' )
-						#~ #	ax[j].plot( Luminosity_mids, model_bin__Swift, linestyle = '--', color = 'k', label = r' $ \rm{ model } $' )
-						#~ #	ax[j].legend()
-						#~ #	ltext = plt.gca().get_legend().get_texts()
-						#~ #	plt.setp( ltext[0], fontsize = 11 )
-						#~ 
-						#~ modeled__Swift_long[j]			=	model_bin__Swift
-						#~ discrepancy_over_z__Swift[j]	=	find_discrepancy( model_bin__Swift, obsSwift_long[j] )
-						#~ rdcdchisqrd_over_z__Swift[j]	=	mf.reduced_chisquared( model_bin__Swift, obsSwift_long[j], obsSwift_long_error[j], 5 )[2]
-					#~ 
-					#~ #	xticklabels	=	ax[0].get_xticklabels() + ax[1].get_xticklabels()
-					#~ #	plt.setp( xticklabels, visible = False )
-					#~ #	plt.xlabel( r'$ \rm{ log } $' + r'$ ( L_{iso} / L_{0} ) $', fontsize = size_font, labelpad = padding+5 )
-					#~ #	plt.show()
-					#~ 
-					#~ grid_of_discrepancy__Swift[c1, c2, cLb, cdel, cX]	=	np.sum(  discrepancy_over_z__Swift )
-					#~ grid_of_rdcdchisqrd__Swift[c1, c2, cLb, cdel, cX]	=	np.mean( rdcdchisqrd_over_z__Swift )
-#~ print 'Swift done in {:.3f} hrs.'.format( ( time.time()-t0 )/3600 ), '\n'
+output = open( './../tables/pkl/Swift--rdcdchisqrd--1.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--2.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--3.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--4.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--5.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--6.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--7.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--8.pkl', 'wb' )
+pickle.dump( grid_of_rdcdchisqrd__Swift, output )
+output.close()
+#~ 
+output = open( './../tables/pkl/Swift--discrepancy--1.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--2.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--3.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--4.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--5.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--6.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--7.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--8.pkl', 'wb' )
+pickle.dump( grid_of_discrepancy__Swift, output )
+output.close()
 
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--1.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--2.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--3.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--4.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--5.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--6.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--7.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--8.pkl', 'wb' )
-#~ pickle.dump( grid_of_rdcdchisqrd__Swift, output )
-#~ output.close()
 
-#~ output = open( './../tables/pkl/Swift--discrepancy--1.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--2.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--3.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--4.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--5.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--6.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--7.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--8.pkl', 'wb' )
-#~ pickle.dump( grid_of_discrepancy__Swift, output )
-#~ output.close()
-#~ 
-#~ 
-#~ ind_discrepancy_min__Swift	=	np.unravel_index( grid_of_discrepancy__Swift.argmin(), grid_of_discrepancy__Swift.shape )
-#~ nu1__Swift	=	nu1_array[ind_discrepancy_min__Swift[0]]
-#~ nu2__Swift	=	nu2_array[ind_discrepancy_min__Swift[1]]
-#~ Lb___Swift	=	Lb__array[ind_discrepancy_min__Swift[2]]
-#~ del__Swift	=	del_array[ind_discrepancy_min__Swift[3]]
-#~ chi__Swift	=	chi_array[ind_discrepancy_min__Swift[4]]
-#~ print 'Minimum discrepancy of {0:.3f} at nu1 = {1:.2f}, nu2 = {2:.2f}, Lb = {3:.2f}, delta = {4:.2f}, chi = {5:.2f}'.format( grid_of_discrepancy__Swift[ind_discrepancy_min__Swift], nu1__Swift, nu2__Swift, Lb___Swift, del__Swift, chi__Swift )
-#~ print 'Reduced-chisquared of {0:.3f}.'.format( grid_of_rdcdchisqrd__Swift[ind_discrepancy_min__Swift] ), '\n'
-#~ 
-#~ ind_rdcdchisqrd_min__Swift	=	np.unravel_index( grid_of_rdcdchisqrd__Swift.argmin(), grid_of_rdcdchisqrd__Swift.shape )
-#~ nu1__Swift	=	nu1_array[ind_rdcdchisqrd_min__Swift[0]]
-#~ nu2__Swift	=	nu2_array[ind_rdcdchisqrd_min__Swift[1]]
-#~ Lb___Swift	=	Lb__array[ind_rdcdchisqrd_min__Swift[2]]
-#~ del__Swift	=	del_array[ind_rdcdchisqrd_min__Swift[3]]
-#~ chi__Swift	=	chi_array[ind_rdcdchisqrd_min__Swift[4]]
-#~ print 'Minimum reduced-chisquared of {0:.3f} at nu1 = {1:.2f}, nu2 = {2:.2f}, Lb = {3:.2f}, delta = {4:.2f}, chi = {5:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu1__Swift, nu2__Swift, Lb___Swift, del__Swift, chi__Swift )
-#~ 
+ind_discrepancy_min__Swift	=	np.unravel_index( grid_of_discrepancy__Swift.argmin(), grid_of_discrepancy__Swift.shape )
+nu1__Swift	=	nu1_array[ind_discrepancy_min__Swift[0]]
+nu2__Swift	=	nu2_array[ind_discrepancy_min__Swift[1]]
+Lb___Swift	=	Lb__array[ind_discrepancy_min__Swift[2]]
+del__Swift	=	del_array[ind_discrepancy_min__Swift[3]]
+chi__Swift	=	chi_array[ind_discrepancy_min__Swift[4]]
+print 'Minimum discrepancy of {0:.3f} at nu1 = {1:.2f}, nu2 = {2:.2f}, Lb = {3:.2f}, delta = {4:.2f}, chi = {5:.2f}'.format( grid_of_discrepancy__Swift[ind_discrepancy_min__Swift], nu1__Swift, nu2__Swift, Lb___Swift, del__Swift, chi__Swift )
+print 'Reduced-chisquared of {0:.3f}.'.format( grid_of_rdcdchisqrd__Swift[ind_discrepancy_min__Swift] ), '\n'
+
+ind_rdcdchisqrd_min__Swift	=	np.unravel_index( grid_of_rdcdchisqrd__Swift.argmin(), grid_of_rdcdchisqrd__Swift.shape )
+nu1__Swift	=	nu1_array[ind_rdcdchisqrd_min__Swift[0]]
+nu2__Swift	=	nu2_array[ind_rdcdchisqrd_min__Swift[1]]
+Lb___Swift	=	Lb__array[ind_rdcdchisqrd_min__Swift[2]]
+del__Swift	=	del_array[ind_rdcdchisqrd_min__Swift[3]]
+chi__Swift	=	chi_array[ind_rdcdchisqrd_min__Swift[4]]
+print 'Minimum reduced-chisquared of {0:.3f} at nu1 = {1:.2f}, nu2 = {2:.2f}, Lb = {3:.2f}, delta = {4:.2f}, chi = {5:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu1__Swift, nu2__Swift, Lb___Swift, del__Swift, chi__Swift )
+
+

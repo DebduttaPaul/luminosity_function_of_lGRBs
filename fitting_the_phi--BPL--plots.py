@@ -34,7 +34,7 @@ logL_max	=	+5
 
 padding		= 	8	# The padding of the axes labels.
 size_font	= 	16	# The fontsize in the images.
-marker_size	=	07	# The size of markers in scatter plots.
+marker_size	=	7	# The size of markers in scatter plots.
 al			=	0.8	# The brightness of plots.
 
 
@@ -52,70 +52,18 @@ z_binned__Swift	=	np.array( [0, 1.809, 3.455, 10] )
 
 
 
-#~ ##	2017-05-26, #1
-#~ nu1__Fermi		=	0.65
-#~ nu2__Fermi		=	2.50
-#~ coeff__Fermi	=	0.30
-#~ delta__Fermi	=	2.85
-#~ chi__Fermi		=	-0.75
-#~ 
-#~ nu1__Swift		=	0.60
-#~ nu2__Swift		=	1.75
-#~ coeff__Swift	=	0.05
-#~ delta__Swift	=	4.10
-#~ chi__Swift		=	-1.00
-
-
-
-#~ ##	2017-05-31, #4
-#~ nu1__Fermi		=	0.65
-#~ nu2__Fermi		=	3.10
-#~ coeff__Fermi	=	0.30
-#~ delta__Fermi	=	2.90
-#~ chi__Fermi		=	-0.80
-#~ 
-#~ nu1__Swift		=	0.70
-#~ nu2__Swift		=	2.10
-#~ coeff__Swift	=	0.07
-#~ delta__Swift	=	3.95
-#~ chi__Swift		=	-0.60
-
-
-
-#~ ##	2017-06-01, #6
+##	2017-06-01, #6
 nu1__Fermi		=	0.65
 nu2__Fermi		=	3.10
 coeff__Fermi	=	0.30
 delta__Fermi	=	2.90
 chi__Fermi		=	-0.80
 
-#~ nu1__Fermi		=	0.70	# Swift best-fits
-#~ nu2__Fermi		=	2.10	# Swift best-fits
-#~ coeff__Fermi	=	0.07	# Swift best-fits
-#~ delta__Fermi	=	3.95	# Swift best-fits
-#~ chi__Fermi		=	-0.65	# Swift best-fits
-#~ 
-#~ 
-#~ nu1__Swift		=	0.70
-#~ nu2__Swift		=	2.10
-#~ coeff__Swift	=	0.07
-#~ delta__Swift	=	3.95
-#~ chi__Swift		=	-0.65
-
 nu1__Swift		=	0.65	# Fermi best-fits
 nu2__Swift		=	3.10	# Fermi best-fits
 coeff__Swift	=	0.30	# Fermi best-fits
 delta__Swift	=	2.90	# Fermi best-fits
 chi__Swift		=	-0.80	# Fermi best-fits
-
-
-
-#~ ##	2017-06-01, #7
-#~ nu1__Swift		=	0.70
-#~ nu2__Swift		=	2.75
-#~ coeff__Swift	=	0.20
-#~ delta__Swift	=	3.10
-#~ chi__Swift		=	-0.50
 
 
 
@@ -177,20 +125,20 @@ Swift_long_Luminosity		=	np.delete( Swift_long_Luminosity      , inds_to_delete 
 Swift_long_Luminosity_error	=	np.delete( Swift_long_Luminosity_error, inds_to_delete )
 
 inds_to_delete				=	np.where(  Fermi_long_redshift > 10 )[0]
-print 'Fermi, deleted:	' , inds_to_delete.size
+#~ print 'Fermi, deleted:	' , inds_to_delete.size
 Fermi_long_redshift			=	np.delete( Fermi_long_redshift        , inds_to_delete )
 Fermi_long_Luminosity		=	np.delete( Fermi_long_Luminosity      , inds_to_delete )
 Fermi_long_Luminosity_error	=	np.delete( Fermi_long_Luminosity_error, inds_to_delete )
 inds_to_delete				=	np.where(  Swift_long_redshift > 10 )[0]
-print 'Swift, deleted:	' , inds_to_delete.size
+#~ print 'Swift, deleted:	' , inds_to_delete.size
 Swift_long_redshift			=	np.delete( Swift_long_redshift        , inds_to_delete )
 Swift_long_Luminosity		=	np.delete( Swift_long_Luminosity      , inds_to_delete )
 Swift_long_Luminosity_error	=	np.delete( Swift_long_Luminosity_error, inds_to_delete )
 
-print known_long_redshift.size, Fermi_long_redshift.size
-print Swift_long_redshift.size, other_long_redshift.size
-print known_long_redshift.size + Fermi_long_redshift.size, Swift_long_redshift.size + other_long_redshift.size, known_long_redshift.size + Fermi_long_redshift.size + Swift_long_redshift.size + other_long_redshift.size
-print '\n\n'
+#	print known_long_redshift.size, Fermi_long_redshift.size
+#	print Swift_long_redshift.size, other_long_redshift.size
+#	print known_long_redshift.size + Fermi_long_redshift.size, Swift_long_redshift.size + other_long_redshift.size, known_long_redshift.size + Fermi_long_redshift.size + Swift_long_redshift.size + other_long_redshift.size
+#	print '\n\n'
 
 
 x__known_long, y__known_long, y__known_long_poserr, y__known_long_negerr		=	sf.my_histogram_with_errorbars( np.log10(known_long_Luminosity/L_norm), np.log10( (known_long_Luminosity + known_long_Luminosity_error) / L_norm ) - np.log10(known_long_Luminosity/L_norm), np.log10( (known_long_Luminosity + known_long_Luminosity_error) / L_norm ) - np.log10(known_long_Luminosity/L_norm), logL_bin, logL_min, logL_max )
@@ -224,12 +172,21 @@ L_hi	=	Luminosity_maxs.max()
 ####################################################################################################################################################
 
 
-def model_evolvingpowerlaw( L_cut, coeff, delta, chi, nu1, nu2, z1, z2 ):
+def model_evolvingBPL( L_cut, coeff, delta, chi, nu1, nu2, z1, z2 ):
 	
 	
-	L_b	=	( L_norm * coeff ) * ( (1+z_sim)**delta )
+	CSFR				=	rho_star_dot.copy()
+	inds_to_zero		=	np.where( (z_sim<z1) | (z2<z_sim) )[0]
+	CSFR[inds_to_zero]	=	0
+	CSFR				=	CSFR  *  (  (1+z_sim)**chi  )
+	CSFR				=	CSFR  *  volume_term
+	
+	
+	L_b					=	( L_norm * coeff ) * ( (1+z_sim)**delta )
+	denominator			=	(  ( 1 - (L_lo/L_b)**(-nu1+1) ) / (-nu1+1)  )  +  (  ( (L_hi/L_b)**(-nu2+1) - 1 ) / (-nu2+1)  )
+	
+	
 	N_vs_L__model	=	np.zeros(Luminosity_mids.size)
-	
 	for j, L1 in enumerate( Luminosity_mins ):
 		
 		inds		=	np.where( L_cut <= L1 )[0]
@@ -244,23 +201,16 @@ def model_evolvingpowerlaw( L_cut, coeff, delta, chi, nu1, nu2, z1, z2 ):
 		ind_mid			=	np.where( (L1 < L_b) & (L_b < L2) )[0]
 		ind_high		=	np.where( L2 <= L_b )[0]
 		
-		integral_over_L[ind_low]	=	(  (Lmax/L_b)**(-nu2+1) - (Lmin/L_b)**(-nu2+1)  ) / (-nu2+1)
-		integral_over_L[ind_mid]	=	(  ( 1 - (Lmin/L_b)**(-nu1+1) ) / (-nu1+1)  )  +  (  ( (Lmax/L_b)**(-nu2+1) - 1 ) / (-nu2+1)  )
-		integral_over_L[ind_high]	=	(  (Lmax/L_b)**(-nu1+1) - (Lmin/L_b)**(-nu1+1)  ) / (-nu1+1)
-		
-		denominator					=	(  ( 1 - (L_lo/L_b)**(-nu1+1) ) / (-nu1+1)  )  +  (  ( (L_hi/L_b)**(-nu2+1) - 1 ) / (-nu2+1)  )
+		integral_over_L[ind_low]	=	(  ((Lmax/L_b)[ind_low])**(-nu2+1) - ((Lmin/L_b)[ind_low])**(-nu2+1)  ) / (-nu2+1)
+		integral_over_L[ind_mid]	=	(  ( 1 - ((Lmin/L_b)[ind_mid])**(-nu1+1) ) / (-nu1+1)  )  +  (  ( ((Lmax/L_b)[ind_mid])**(-nu2+1) - 1 ) / (-nu2+1)  )
+		integral_over_L[ind_high]	=	(  ((Lmax/L_b)[ind_high])**(-nu1+1) - ((Lmin/L_b)[ind_high])**(-nu1+1)  ) / (-nu1+1)
 		integral_overL				=	integral_over_L / denominator
 		
 		ind	=	np.where( integral_over_L <= 0  )[0]
 		integral_over_L[ind]	=	0
 		
-		CSFR				=	rho_star_dot.copy()
-		inds_to_take		=	np.where( (z1<z_sim) & (z_sim<z2) )[0]
-		inds_to_zero		=	np.delete( np.arange(z_sim.size), inds_to_take )
-		CSFR[inds_to_zero]	=	0
-		CSFR				=	CSFR  *  (  (1+z_sim)**chi  )
 		
-		integrand	=	CSFR  *  volume_term  *  integral_over_L		
+		integrand	=	CSFR  *  integral_over_L		
 		integral	=	simps( integrand, z_sim )
 		
 		N_vs_L__model[j]	=	integral
@@ -309,10 +259,10 @@ for j, z in enumerate( z_binned__Fermi[:-1] ):
 	Fermi_long_total_data_en=	np.sqrt( Fermi_long_total_data_en**2 + obsFermi_long_negerr_bin**2 )
 	
 	if j == 0:
-		model_bin__Fermi	=	model_evolvingpowerlaw( L_cut__Fermi, coeff__Fermi, delta__Fermi, chi__Fermi, nu1__Fermi, nu2__Fermi, z, z_binned__Fermi[j+1] )
+		model_bin__Fermi	=	model_evolvingBPL( L_cut__Fermi, coeff__Fermi, delta__Fermi, chi__Fermi, nu1__Fermi, nu2__Fermi, z, z_binned__Fermi[j+1] )
 		Fermi_norm			=	obsFermi_long_bin.sum() / model_bin__Fermi.sum()
 		print 'norm			:	', Fermi_norm
-	model_bin__Fermi	=	model_evolvingpowerlaw( L_cut__Fermi, coeff__Fermi, delta__Fermi, chi__Fermi, nu1__Fermi, nu2__Fermi, z, z_binned__Fermi[j+1] )
+	model_bin__Fermi	=	model_evolvingBPL( L_cut__Fermi, coeff__Fermi, delta__Fermi, chi__Fermi, nu1__Fermi, nu2__Fermi, z, z_binned__Fermi[j+1] )
 	model_bin__Fermi	=	model_bin__Fermi * Fermi_norm
 	Fermi_long_total_model	=	Fermi_long_total_model + model_bin__Fermi
 	
@@ -374,10 +324,10 @@ for j, z in enumerate( z_binned__Swift[:-1] ):
 	Swift_long_total_data_en=	np.sqrt( Swift_long_total_data_en**2 + obsSwift_long_negerr_bin**2 )
 	
 	if j == 0:
-		model_bin__Swift	=	model_evolvingpowerlaw( L_cut__Swift, coeff__Swift, delta__Swift, chi__Swift, nu1__Swift, nu2__Swift, z, z_binned__Swift[j+1] )
+		model_bin__Swift	=	model_evolvingBPL( L_cut__Swift, coeff__Swift, delta__Swift, chi__Swift, nu1__Swift, nu2__Swift, z, z_binned__Swift[j+1] )
 		Swift_norm			=	obsSwift_long_bin.sum() / model_bin__Swift.sum()
 		print 'norm			:	', Swift_norm
-	model_bin__Swift	=	model_evolvingpowerlaw( L_cut__Swift, coeff__Swift, delta__Swift, chi__Swift, nu1__Swift, nu2__Swift, z, z_binned__Swift[j+1] )
+	model_bin__Swift	=	model_evolvingBPL( L_cut__Swift, coeff__Swift, delta__Swift, chi__Swift, nu1__Swift, nu2__Swift, z, z_binned__Swift[j+1] )
 	model_bin__Swift	=	model_bin__Swift * Swift_norm
 	Swift_long_total_model	=	Swift_long_total_model + model_bin__Swift
 	
@@ -433,10 +383,10 @@ fig	=	plt.figure( figsize=(6,6) )
 #~ fig.suptitle( r'$ \rm{ CZTI } $', fontsize = size_font-2 )
 for j, z in enumerate( z_binned__Fermi[:-1] ):
 	
-	model_bin__CZTI	=	model_evolvingpowerlaw( L_cut__CZTI, coeff__Fermi, delta__Fermi, chi__Fermi, nu1__Fermi, nu2__Fermi, z, z_binned__Fermi[j+1] )
+	model_bin__CZTI	=	model_evolvingBPL( L_cut__CZTI, coeff__Fermi, delta__Fermi, chi__Fermi, nu1__Fermi, nu2__Fermi, z, z_binned__Fermi[j+1] )
 	model_bin__CZTI	=	model_bin__CZTI * ( 7.498*1e-8 / 3 )
 	
-	print round( model_bin__CZTI.sum() )
+	print round(model_bin__CZTI.sum())
 	
 	CZTI_long_total_model	=	CZTI_long_total_model + model_bin__CZTI
 	
