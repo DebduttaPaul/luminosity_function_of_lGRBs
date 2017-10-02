@@ -54,13 +54,8 @@ z_binned__Swift	=	np.array( [0, 1.809, 3.455, 10] )
 
 ####################################################################################################################################################
 
-
-def straight_line( x, m, c ):
-	return m*x + c
-	
 def f(x, nu):
 	return x**(-nu) * np.exp(-x)
-
 
 ####################################################################################################################################################
 
@@ -260,12 +255,28 @@ def find_discrepancy( model, observed ):
 	return np.sum(  ( model - observed ) ** 2  )
 
 
-def model_evolvingexponentialcutoffpowerlaw( L_cut, coeff, delta, nu, chi, z1, z2 ):
+def model_evolvingECPL( L_cut, coeff, delta, nu, chi, z1, z2 ):
+	
+	CSFR				=	rho_star_dot.copy()
+	inds_to_take		=	np.where( (z1<z_sim) & (z_sim<z2) )[0]
+	inds_to_zero		=	np.delete( np.arange(z_sim.size), inds_to_take )
+	CSFR[inds_to_zero]	=	0
+	CSFR				=	CSFR  *  (  (1+z_sim)**chi  )  *  volume_term
+	
+	L_b					=	( L_norm * coeff ) * ( (1+z_sim)**delta )
+	
+	lower_limit_array	=	L_lo/L_b
+	upper_limit_array	=	L_hi/L_b
+	denominator_array	=	np.zeros(z_sim.size)
+	for k, z in enumerate(z_sim):
+		lower_limit				=	lower_limit_array[k]
+		upper_limit				=	upper_limit_array[k]
+		
+		denominator_array[k]	=	quad( f, lower_limit, upper_limit, args=(nu) )[0]
+	denominator_array	=	L_b * denominator_array 
 	
 	
-	L_b	=	( L_norm * coeff ) * ( (1+z_sim)**delta )
 	N_vs_L__model	=	np.zeros(Luminosity_mids.size)
-	
 	for j, L1 in enumerate( Luminosity_mins ):
 		
 		inds		=	np.where( L_cut <= L1 )[0]
@@ -279,25 +290,15 @@ def model_evolvingexponentialcutoffpowerlaw( L_cut, coeff, delta, nu, chi, z1, z
 		for k, z in enumerate(z_sim):
 			
 			L					=	np.linspace( Lmin[k], Lmax[k], 1e3 )
-			integrand			=	(  (L/L_b[k])**(-nu)  )  *  np.exp(-L/L_b[k])
-			
-			lower_limit			=	L_lo / L_b[k]
-			upper_limit			=	L_hi / L_b[k]
-			denominator			=	L_b[k] * quad( f, lower_limit, upper_limit, args=(nu) )[0]
-			
-			integral_over_L[k]	=	simps( integrand, L ) / denominator
+			integrand			=	(  (L/L_b[k])**(-nu)  )  *  np.exp( - L/L_b[k] )
+			integral_over_L[k]	=	simps( integrand, L )
+		integral_over_L	=	integral_over_L / denominator_array
 		
 		
 		ind	=	np.where( integral_over_L <= 0  )[0]
 		integral_over_L[ind]	=	0
 		
-		CSFR				=	rho_star_dot.copy()
-		inds_to_take		=	np.where( (z1<z_sim) & (z_sim<z2) )[0]
-		inds_to_zero		=	np.delete( np.arange(z_sim.size), inds_to_take )
-		CSFR[inds_to_zero]	=	0
-		CSFR				=	CSFR  *  (  (1+z_sim)**chi  )
-		
-		integrand	=	CSFR  *  volume_term  *  integral_over_L		
+		integrand	=	CSFR  *  integral_over_L		
 		integral	=	simps( integrand, z_sim )
 		
 		N_vs_L__model[j]	=	integral
@@ -355,10 +356,10 @@ for c1, nu in enumerate(nu_array):
 		for j, z in enumerate( z_binned__Fermi[:-1] ):
 			
 			if j == 0:
-				model_bin__Fermi	=	model_evolvingexponentialcutoffpowerlaw( L_cut__Fermi, coeff, delta, nu, chi, z, z_binned__Fermi[j+1] )
+				model_bin__Fermi	=	model_evolvingECPL( L_cut__Fermi, coeff, delta, nu, chi, z, z_binned__Fermi[j+1] )
 				Fermi_norm			=	obsFermi_long[j].sum() / model_bin__Fermi.sum()
 			
-			model_bin__Fermi	=	model_evolvingexponentialcutoffpowerlaw( L_cut__Fermi, coeff, delta, nu, chi, z, z_binned__Fermi[j+1] )
+			model_bin__Fermi	=	model_evolvingECPL( L_cut__Fermi, coeff, delta, nu, chi, z, z_binned__Fermi[j+1] )
 			model_bin__Fermi	=	model_bin__Fermi * Fermi_norm
 			
 			#	ax[j] = fig.add_subplot(z_binned__Fermi.size-1,1,j+1)
@@ -417,82 +418,82 @@ print 'Minimum reduced-chisquared of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.form
 
 
 
-#~ nu_min	=	0.10	;	nu_max	=	2.10	;	nu_bin	=	0.10	#1
-#~ Lb_min	=	3.20	;	Lb_max	=	5.20	;	Lb_bin	=	0.10	#1
-#~ nu_min	=	0.10	;	nu_max	=	1.10	;	nu_bin	=	0.10	#2
-#~ Lb_min	=	4.20	;	Lb_max	=	6.20	;	Lb_bin	=	0.10	#2
-#~ nu_array	=	np.arange( nu_min, nu_max, nu_bin )	;	nu_size	=	nu_array.size
-#~ Lb_array	=	np.arange( Lb_min, Lb_max, Lb_bin )	;	Lb_size	=	Lb_array.size
-#~ print 'nu_array:	', nu_array
-#~ print 'Lb_array:	', Lb_array
-#~ grid_of_discrepancy__Swift	=	np.zeros( (nu_size, Lb_size) )
-#~ grid_of_rdcdchisqrd__Swift	=	grid_of_discrepancy__Swift.copy()
-#~ print 'Grid of {0:d} (nu) X {1:d} (Lb) = {2:d}.'.format(nu_size, Lb_size, grid_of_rdcdchisqrd__Swift.size)
-#~ 
-#~ 
-#~ t0	=	time.time()
-#~ for c1, nu in enumerate(nu_array):
-	#~ for cLb, coeff in enumerate(Lb_array):
-					#~ 
-		#~ modeled__Swift_long			=	np.zeros( (z_binned__Swift.size-1 , Luminosity_mids.size) )
-		#~ discrepancy_over_z__Swift	=	np.zeros( z_binned__Swift.size )
-		#~ rdcdchisqrd_over_z__Swift	=	discrepancy_over_z__Swift.copy()
-		#~ 
-		#~ #	ax	=	{}
-		#~ #	fig	=	plt.figure( figsize=(6, 6) )
-		#~ 
-		#~ for j, z in enumerate( z_binned__Swift[:-1] ):
-			#~ 
-			#~ if j == 0:
-				#~ model_bin__Swift	=	model_evolvingexponentialcutoffpowerlaw( L_cut__Swift, coeff, delta, nu, chi, z, z_binned__Swift[j+1] )
-				#~ Swift_norm			=	obsSwift_long[j].sum() / model_bin__Swift.sum()
-			#~ 
-			#~ model_bin__Swift	=	model_evolvingexponentialcutoffpowerlaw( L_cut__Swift, coeff, delta, nu, chi, z, z_binned__Swift[j+1] )
-			#~ model_bin__Swift	=	model_bin__Swift * Swift_norm
-			#~ 
-			#~ #	ax[j] = fig.add_subplot(z_binned__Swift.size-1,1,j+1)
-			#~ #	ax[j].text( -3.5, 350, r'$ z : $ ' + r'$ {0:.1f} $'.format(z) + r' $ \rm{to} $ ' + r'$ {0:.1f} $'.format(z_binned__Swift[j+1]), fontsize = size_font, ha = 'center', va = 'center' )
-			#~ #	ax[j].set_ylabel( r'$ \rm{ N } $', fontsize = size_font, rotation = 0, labelpad = padding+6 )
-			#~ #	ax[j].set_ylim( 0, 400 )
-			#~ #	ax[j].errorbar( Luminosity_mids, obsSwift_long[j], yerr = [ obsSwift_long_poserr[j], obsSwift_long_negerr[j] ], fmt = '-', color = 'k', label = r' $ \rm{ observed } $' )
-			#~ #	ax[j].plot( Luminosity_mids, model_bin__Swift, linestyle = '--', color = 'k', label = r' $ \rm{ model } $' )
-			#~ #	ax[j].legend()
-			#~ #	ltext = plt.gca().get_legend().get_texts()
-			#~ #	plt.setp( ltext[0], fontsize = 11 )
-			#~ 
-			#~ modeled__Swift_long[j]			=	model_bin__Swift
-			#~ discrepancy_over_z__Swift[j]	=	find_discrepancy( model_bin__Swift, obsSwift_long[j] )
-			#~ rdcdchisqrd_over_z__Swift[j]	=	mf.reduced_chisquared( model_bin__Swift, obsSwift_long[j], obsSwift_long_error[j], 4 )[2]
-			#~ 
-			#~ #	print mf.reduced_chisquared( model_bin__Swift, obsSwift_long[j], obsSwift_long_error[j], 5 )[1]
-		#~ 
-		#~ #	xticklabels	=	ax[0].get_xticklabels() + ax[1].get_xticklabels()
-		#~ #	plt.setp( xticklabels, visible = False )
-		#~ #	plt.xlabel( r'$ \rm{ log } $' + r'$ ( L_{iso} / L_{0} ) $', fontsize = size_font, labelpad = padding+5 )
-		#~ #	plt.show()
-		#~ 
-		#~ grid_of_discrepancy__Swift[c1, cLb]	=	np.sum(  discrepancy_over_z__Swift )
-		#~ grid_of_rdcdchisqrd__Swift[c1, cLb]	=	np.mean( rdcdchisqrd_over_z__Swift )
-#~ print 'Swift done in {:.3f} hrs.'.format( ( time.time()-t0 )/3600 ), '\n'
-#~ 
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--1.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--rdcdchisqrd--2.pkl', 'wb' )
-#~ pickle.dump( grid_of_rdcdchisqrd__Swift, output )
-#~ output.close()
-#~ 
-#~ output = open( './../tables/pkl/Swift--discrepancy--1.pkl', 'wb' )
-#~ output = open( './../tables/pkl/Swift--discrepancy--2.pkl', 'wb' )
-#~ pickle.dump( grid_of_discrepancy__Swift, output )
-#~ output.close()
-#~ 
-#~ 
-#~ ind_discrepancy_min__Swift	=	np.unravel_index( grid_of_discrepancy__Swift.argmin(), grid_of_discrepancy__Swift.shape )
-#~ nu_Swift	=	nu_array[ind_discrepancy_min__Swift[0]]
-#~ Lb_Swift	=	Lb_array[ind_discrepancy_min__Swift[1]]
-#~ print 'Minimum discrepancy of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.format( grid_of_discrepancy__Swift[ind_discrepancy_min__Swift], nu_Swift, Lb_Swift )
-#~ print 'Reduced-chisquared of {0:.3f}.'.format( grid_of_rdcdchisqrd__Swift[ind_discrepancy_min__Swift]), '\n'
-#~ 
-#~ ind_rdcdchisqrd_min__Swift	=	np.unravel_index( grid_of_rdcdchisqrd__Swift.argmin(), grid_of_rdcdchisqrd__Swift.shape )
-#~ nu_Swift	=	nu_array[ind_rdcdchisqrd_min__Swift[0]]
-#~ Lb_Swift	=	Lb_array[ind_rdcdchisqrd_min__Swift[1]]
-#~ print 'Minimum reduced-chisquared of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu_Swift, Lb_Swift ), '\n\n\n\n\n\n\n\n'
+nu_min	=	0.10	;	nu_max	=	2.10	;	nu_bin	=	0.10	#1
+Lb_min	=	3.20	;	Lb_max	=	5.20	;	Lb_bin	=	0.10	#1
+nu_min	=	0.10	;	nu_max	=	1.10	;	nu_bin	=	0.10	#2
+Lb_min	=	4.20	;	Lb_max	=	6.20	;	Lb_bin	=	0.10	#2
+nu_array	=	np.arange( nu_min, nu_max, nu_bin )	;	nu_size	=	nu_array.size
+Lb_array	=	np.arange( Lb_min, Lb_max, Lb_bin )	;	Lb_size	=	Lb_array.size
+print 'nu_array:	', nu_array
+print 'Lb_array:	', Lb_array
+grid_of_discrepancy__Swift	=	np.zeros( (nu_size, Lb_size) )
+grid_of_rdcdchisqrd__Swift	=	grid_of_discrepancy__Swift.copy()
+print 'Grid of {0:d} (nu) X {1:d} (Lb) = {2:d}.'.format(nu_size, Lb_size, grid_of_rdcdchisqrd__Swift.size)
+
+
+t0	=	time.time()
+for c1, nu in enumerate(nu_array):
+	for cLb, coeff in enumerate(Lb_array):
+					
+		modeled__Swift_long			=	np.zeros( (z_binned__Swift.size-1 , Luminosity_mids.size) )
+		discrepancy_over_z__Swift	=	np.zeros( z_binned__Swift.size )
+		rdcdchisqrd_over_z__Swift	=	discrepancy_over_z__Swift.copy()
+		
+		#	ax	=	{}
+		#	fig	=	plt.figure( figsize=(6, 6) )
+		
+		for j, z in enumerate( z_binned__Swift[:-1] ):
+			
+			if j == 0:
+				model_bin__Swift	=	model_evolvingECPL( L_cut__Swift, coeff, delta, nu, chi, z, z_binned__Swift[j+1] )
+				Swift_norm			=	obsSwift_long[j].sum() / model_bin__Swift.sum()
+			
+			model_bin__Swift	=	model_evolvingECPL( L_cut__Swift, coeff, delta, nu, chi, z, z_binned__Swift[j+1] )
+			model_bin__Swift	=	model_bin__Swift * Swift_norm
+			
+			#	ax[j] = fig.add_subplot(z_binned__Swift.size-1,1,j+1)
+			#	ax[j].text( -3.5, 350, r'$ z : $ ' + r'$ {0:.1f} $'.format(z) + r' $ \rm{to} $ ' + r'$ {0:.1f} $'.format(z_binned__Swift[j+1]), fontsize = size_font, ha = 'center', va = 'center' )
+			#	ax[j].set_ylabel( r'$ \rm{ N } $', fontsize = size_font, rotation = 0, labelpad = padding+6 )
+			#	ax[j].set_ylim( 0, 400 )
+			#	ax[j].errorbar( Luminosity_mids, obsSwift_long[j], yerr = [ obsSwift_long_poserr[j], obsSwift_long_negerr[j] ], fmt = '-', color = 'k', label = r' $ \rm{ observed } $' )
+			#	ax[j].plot( Luminosity_mids, model_bin__Swift, linestyle = '--', color = 'k', label = r' $ \rm{ model } $' )
+			#	ax[j].legend()
+			#	ltext = plt.gca().get_legend().get_texts()
+			#	plt.setp( ltext[0], fontsize = 11 )
+			
+			modeled__Swift_long[j]			=	model_bin__Swift
+			discrepancy_over_z__Swift[j]	=	find_discrepancy( model_bin__Swift, obsSwift_long[j] )
+			rdcdchisqrd_over_z__Swift[j]	=	mf.reduced_chisquared( model_bin__Swift, obsSwift_long[j], obsSwift_long_error[j], 4 )[2]
+			
+			#	print mf.reduced_chisquared( model_bin__Swift, obsSwift_long[j], obsSwift_long_error[j], 5 )[1]
+		
+		#	xticklabels	=	ax[0].get_xticklabels() + ax[1].get_xticklabels()
+		#	plt.setp( xticklabels, visible = False )
+		#	plt.xlabel( r'$ \rm{ log } $' + r'$ ( L_{iso} / L_{0} ) $', fontsize = size_font, labelpad = padding+5 )
+		#	plt.show()
+		
+		grid_of_discrepancy__Swift[c1, cLb]	=	np.sum(  discrepancy_over_z__Swift )
+		grid_of_rdcdchisqrd__Swift[c1, cLb]	=	np.mean( rdcdchisqrd_over_z__Swift )
+print 'Swift done in {:.3f} hrs.'.format( ( time.time()-t0 )/3600 ), '\n'
+
+output = open( './../tables/pkl/Swift--rdcdchisqrd--1.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--rdcdchisqrd--2.pkl', 'wb' )
+pickle.dump( grid_of_rdcdchisqrd__Swift, output )
+output.close()
+
+output = open( './../tables/pkl/Swift--discrepancy--1.pkl', 'wb' )
+output = open( './../tables/pkl/Swift--discrepancy--2.pkl', 'wb' )
+pickle.dump( grid_of_discrepancy__Swift, output )
+output.close()
+
+
+ind_discrepancy_min__Swift	=	np.unravel_index( grid_of_discrepancy__Swift.argmin(), grid_of_discrepancy__Swift.shape )
+nu_Swift	=	nu_array[ind_discrepancy_min__Swift[0]]
+Lb_Swift	=	Lb_array[ind_discrepancy_min__Swift[1]]
+print 'Minimum discrepancy of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.format( grid_of_discrepancy__Swift[ind_discrepancy_min__Swift], nu_Swift, Lb_Swift )
+print 'Reduced-chisquared of {0:.3f}.'.format( grid_of_rdcdchisqrd__Swift[ind_discrepancy_min__Swift]), '\n'
+
+ind_rdcdchisqrd_min__Swift	=	np.unravel_index( grid_of_rdcdchisqrd__Swift.argmin(), grid_of_rdcdchisqrd__Swift.shape )
+nu_Swift	=	nu_array[ind_rdcdchisqrd_min__Swift[0]]
+Lb_Swift	=	Lb_array[ind_rdcdchisqrd_min__Swift[1]]
+print 'Minimum reduced-chisquared of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu_Swift, Lb_Swift ), '\n\n\n\n\n\n\n\n'
