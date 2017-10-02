@@ -34,7 +34,7 @@ logL_max	=	+5
 
 padding		= 	8	# The padding of the axes labels.
 size_font	= 	16	# The fontsize in the images.
-marker_size	=	07	# The size of markers in scatter plots.
+marker_size	=	7	# The size of markers in scatter plots.
 al			=	0.8	# The brightness of plots.
 z_min		=	1e-1 #	for the purposes of plotting
 z_max		=	2e+1 #	for the purposes of plotting
@@ -495,4 +495,3 @@ ind_rdcdchisqrd_min__Swift	=	np.unravel_index( grid_of_rdcdchisqrd__Swift.argmin
 nu_Swift	=	nu_array[ind_rdcdchisqrd_min__Swift[0]]
 Lb_Swift	=	Lb_array[ind_rdcdchisqrd_min__Swift[1]]
 print 'Minimum reduced-chisquared of {0:.3f} at nu = {1:.2f}, Lb = {2:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu_Swift, Lb_Swift ), '\n\n\n\n\n\n\n\n'
-
