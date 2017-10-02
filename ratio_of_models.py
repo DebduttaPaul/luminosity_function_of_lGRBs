@@ -38,7 +38,7 @@ BAT_sensitivity	=	0.20		# in  ph.s^{-1}.cm^{2}.
 
 padding		= 	8	# The padding of the axes labels.
 size_font	= 	16	# The fontsize in the images.
-marker_size	=	07	# The size of markers in scatter plots.
+marker_size	=	7	# The size of markers in scatter plots.
 al			=	0.8	# The brightness of plots.
 z_min		=	1e-1 #	for the purposes of plotting
 z_max		=	2e+1 #	for the purposes of plotting
