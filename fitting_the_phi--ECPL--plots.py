@@ -1089,4 +1089,3 @@ plt.clf()
 plt.close()
 
 print 'Total number of predicted CZTI GRBs:	', round( CZTI_long_total_model.sum() )
-
