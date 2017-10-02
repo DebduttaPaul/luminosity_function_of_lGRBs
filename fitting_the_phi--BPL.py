@@ -588,3 +588,4 @@ del__Swift	=	del_array[ind_rdcdchisqrd_min__Swift[3]]
 chi__Swift	=	chi_array[ind_rdcdchisqrd_min__Swift[4]]
 print 'Minimum reduced-chisquared of {0:.3f} at nu1 = {1:.2f}, nu2 = {2:.2f}, Lb = {3:.2f}, delta = {4:.2f}, chi = {5:.2f}'.format( grid_of_rdcdchisqrd__Swift[ind_rdcdchisqrd_min__Swift], nu1__Swift, nu2__Swift, Lb___Swift, del__Swift, chi__Swift )
 
+
