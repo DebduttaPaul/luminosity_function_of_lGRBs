@@ -1,5 +1,5 @@
 # luminosity_function_of_LGRBs_using_Swift_and_Fermi
-This is the set of data files and codes used for the project DPaul(2017), https://arxiv.org/abs/1709.09145.
+This is the set of data files and codes used for the project DPaul(2018), http://adsabs.harvard.edu/abs/2018MNRAS.473.3385P.
 
 The following is a brief description of the codes, as well as the databases used and created.
 
