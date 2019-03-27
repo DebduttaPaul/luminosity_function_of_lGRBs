@@ -1,4 +1,4 @@
-# luminosity_function_of_lGRBs_using_Swift_and_Fermi
+# luminosity_function_of_lGRBs
 This is the set of data files and codes used for the project Paul, D. 2018, MNRAS, 473, 3385 (https://ui.adsabs.harvard.edu/#abs/2018MNRAS.473.3385P). Please cite this paper if you are using any of these codes or databases.
 
 The following is a brief description of the codes, as well as the databases used and created.
